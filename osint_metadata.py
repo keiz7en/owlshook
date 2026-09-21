@@ -6,6 +6,10 @@ import json
 import re
 import hashlib
 import struct
+import tempfile
+import urllib.request
+import ssl
+from urllib.parse import urlparse
 from datetime import datetime
 
 RED = '\033[91m'
@@ -370,17 +374,80 @@ def print_report(result):
     print('')
     print(f"{CYAN}{'=' * 70}{RESET}")
 
+def download_file(url):
+    try:
+        tmp = tempfile.mkdtemp()
+        parsed = urlparse(url)
+        name = os.path.basename(parsed.path).split('?')[0]
+        if '.' not in name:
+            name = 'download.jpg'
+        fpath = os.path.join(tmp, name)
+        referer = f'{parsed.scheme}://{parsed.netloc}/'
+
+        file_id_match = re.search(r'/file/d/([a-zA-Z0-9_-]+)', url)
+        if not file_id_match:
+            file_id_match = re.search(r'id=([a-zA-Z0-9_-]+)', url)
+        if file_id_match and 'drive.google.com' in url:
+            file_id = file_id_match.group(1)
+            download_url = f'https://drive.google.com/uc?export=download&id={file_id}&confirm=t'
+            result = subprocess.run([
+                'curl', '-sk', '-L', '-o', fpath,
+                '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                '-H', 'Referer: https://drive.google.com/',
+                '--max-time', '30',
+                download_url
+            ], capture_output=True, text=True, timeout=35)
+            if os.path.exists(fpath) and os.path.getsize(fpath) > 100:
+                with open(fpath, 'rb') as f:
+                    header = f.read(200)
+                if b'<!DOCTYPE' in header or b'<html' in header:
+                    os.remove(fpath)
+                    return None
+                return fpath
+            return None
+        else:
+            result = subprocess.run([
+                'curl', '-sk', '-L', '-o', fpath,
+                '-H', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                '-H', 'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
+                '-H', f'Referer: {referer}',
+                '--max-time', '30',
+                url
+            ], capture_output=True, text=True, timeout=35)
+            if os.path.exists(fpath) and os.path.getsize(fpath) > 100:
+                return fpath
+
+        if os.path.exists(fpath):
+            os.remove(fpath)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+        req.add_header('Accept', 'image/*,*/*;q=0.8')
+        req.add_header('Referer', referer)
+        with urllib.request.urlopen(req, context=ctx, timeout=30) as r:
+            with open(fpath, 'wb') as f:
+                f.write(r.read())
+        if os.path.getsize(fpath) < 100:
+            return None
+        return fpath
+    except:
+        return None
+
+
 def main():
     if len(sys.argv) < 2:
         print(f"{CYAN}{BANNER}{RESET}")
         print(f"  {BOLD}Advanced OSINT & Forensic Metadata Extractor{RESET}")
         print()
-        print(f"  {GREEN}Usage:{RESET} python3 osint_metadata.py <file>")
+        print(f"  {GREEN}Usage:{RESET} owlshook osint <file_or_url>")
         print()
         print(f"  {GREEN}Examples:{RESET}")
-        print(f"    {DIM}python3 osint_metadata.py photo.jpg{RESET}")
-        print(f"    {DIM}python3 osint_metadata.py video.mp4{RESET}")
-        print(f"    {DIM}python3 osint_metadata.py document.pdf{RESET}")
+        print(f"    {DIM}owlshook osint photo.jpg{RESET}")
+        print(f"    {DIM}owlshook osint video.mp4{RESET}")
+        print(f"    {DIM}owlshook osint https://instagram.com/p/ABC123/{RESET}")
+        print(f"    {DIM}owlshook osint https://twitter.com/user/status/123{RESET}")
         print()
         print(f"  {GREEN}Extracts:{RESET}")
         print(f"    {DIM}• GPS coordinates (all sources){RESET}")
@@ -394,14 +461,35 @@ def main():
         print(f"    {DIM}• Full EXIF dump{RESET}")
         print()
         sys.exit(1)
-    filepath = sys.argv[1]
-    if not os.path.exists(filepath):
-        print(f"{RED}[!] File not found: {filepath}{RESET}")
+
+    target = sys.argv[1]
+    is_url = target.startswith('http://') or target.startswith('https://')
+
+    if is_url:
+        print(f'\n  {GREEN}Downloading:{RESET} {target}')
+        fpath = download_file(target)
+        if not fpath:
+            print(f'  {RED}Failed to download! Try downloading manually and analyze the local file.{RESET}')
+            sys.exit(1)
+        print(f'  {GREEN}Saved to:{RESET} {fpath}')
+        print(f"\n  {GREEN}Analyzing:{RESET} {target}")
+        print(f"  {DIM}Please wait...{RESET}\n")
+        result = full_forensic_analysis(fpath)
+        result['source_url'] = target
+        print_report(result)
+        try:
+            os.remove(fpath)
+            os.rmdir(os.path.dirname(fpath))
+        except:
+            pass
+    elif os.path.exists(target):
+        print(f"\n  {GREEN}Analyzing:{RESET} {target}")
+        print(f"  {DIM}Please wait...{RESET}\n")
+        result = full_forensic_analysis(target)
+        print_report(result)
+    else:
+        print(f"{RED}[!] File not found: {target}{RESET}")
         sys.exit(1)
-    print(f"\n  {GREEN}Analyzing:{RESET} {filepath}")
-    print(f"  {DIM}Please wait...{RESET}\n")
-    result = full_forensic_analysis(filepath)
-    print_report(result)
 
 if __name__ == '__main__':
     main()

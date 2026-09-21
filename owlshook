@@ -201,20 +201,20 @@ def main():
                 print("[!] Usage: owlshook geolocate <image_or_url>")
             sys.exit(1)
         run_tool('geolocate.py', args)
-    elif cmd == 'osint':
+    elif cmd in ('osint', 'soint', 'osnit', 'osnet', 'soint'):
         if not args:
             if USE_COLOR:
-                print(f"{RED}[!] Usage: owlshook osint <file>{RESET}")
+                print(f"{RED}[!] Usage: owlshook osint <file_or_url>{RESET}")
             else:
-                print("[!] Usage: owlshook osint <file>")
+                print("[!] Usage: owlshook osint <file_or_url>")
             sys.exit(1)
         run_tool('osint_metadata.py', args)
-    elif cmd == 'forensic':
+    elif cmd in ('forensic', 'foresic', 'fornsic', 'forensik', 'forinc', 'forensics'):
         if not args:
             if USE_COLOR:
-                print(f"{RED}[!] Usage: owlshook forensic <file>{RESET}")
+                print(f"{RED}[!] Usage: owlshook forensic <file_or_url>{RESET}")
             else:
-                print("[!] Usage: owlshook forensic <file>")
+                print("[!] Usage: owlshook forensic <file_or_url>")
             sys.exit(1)
         run_tool('osint_metadata.py', args)
     elif cmd == 'guide':
