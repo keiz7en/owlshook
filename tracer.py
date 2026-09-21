@@ -210,13 +210,18 @@ def get_file_type(fpath):
 def download(url):
     try:
         import subprocess
+        from urllib.parse import quote, urlunparse
         tmp = tempfile.mkdtemp()
         real_url = resolve_url(url)
-        name = os.path.basename(urlparse(real_url).path).split('?')[0]
+        parsed_url = urlparse(real_url)
+        encoded_path = quote(parsed_url.path)
+        clean_url = urlunparse(parsed_url._replace(path=encoded_path))
+        name = os.path.basename(parsed_url.path).split('?')[0]
         if '.' not in name:
             name = 'image.jpg'
+        name = re.sub(r'[^\w\-.]', '_', name)
         fpath = os.path.join(tmp, name)
-        referer = f'{urlparse(real_url).scheme}://{urlparse(real_url).netloc}/'
+        referer = f'{parsed_url.scheme}://{parsed_url.netloc}/'
         
         if 'google_drive' in get_platform(url):
             file_id_match = re.search(r'/file/d/([a-zA-Z0-9_-]+)', url)
@@ -252,7 +257,7 @@ def download(url):
                 '-H', 'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
                 '-H', f'Referer: {referer}',
                 '--max-time', '30',
-                real_url
+                clean_url
             ], capture_output=True, text=True, timeout=35)
             
             if os.path.exists(fpath) and os.path.getsize(fpath) > 100:
@@ -263,7 +268,7 @@ def download(url):
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(real_url)
+        req = urllib.request.Request(clean_url)
         req.add_header('User-Agent',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
             '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')

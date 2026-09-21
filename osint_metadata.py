@@ -376,11 +376,15 @@ def print_report(result):
 
 def download_file(url):
     try:
+        from urllib.parse import quote, urlunparse
         tmp = tempfile.mkdtemp()
         parsed = urlparse(url)
+        encoded_path = quote(parsed.path)
+        clean_url = urlunparse(parsed._replace(path=encoded_path))
         name = os.path.basename(parsed.path).split('?')[0]
         if '.' not in name:
             name = 'download.jpg'
+        name = re.sub(r'[^\w\-.]', '_', name)
         fpath = os.path.join(tmp, name)
         referer = f'{parsed.scheme}://{parsed.netloc}/'
 
@@ -412,7 +416,7 @@ def download_file(url):
                 '-H', 'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
                 '-H', f'Referer: {referer}',
                 '--max-time', '30',
-                url
+                clean_url
             ], capture_output=True, text=True, timeout=35)
             if os.path.exists(fpath) and os.path.getsize(fpath) > 100:
                 return fpath
@@ -422,7 +426,7 @@ def download_file(url):
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(clean_url)
         req.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
         req.add_header('Accept', 'image/*,*/*;q=0.8')
         req.add_header('Referer', referer)
