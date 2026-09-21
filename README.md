@@ -14,6 +14,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![OSINT](https://img.shields.io/badge/OSINT-Forensics-red.svg)](https://github.com/keiz7en/owlshook)
+[![cybersecurity](https://img.shields.io/badge/CyberSec-Tool-orange.svg)](https://github.com/keiz7en/owlshook)
 
 ---
 
