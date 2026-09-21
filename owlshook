@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+import sys
+import os
+import subprocess
+
+BANNER = r"""
+  ______          ___       _____ _    _  ____   ____  _  __
+ / __ \ \        / / |     / ____| |  | |/ __ \ / __ \| |/ /
+| |  | \ \  /\  / /| |    | (___ | |__| | |  | | |  | | ' / 
+| |  | |\ \/  \/ / | |     \___ \|  __  | |  | | |  | |  <  
+| |__| | \  /\  /  | |____ ____) | |  | | |__| | |__| | . \ 
+ \____/   \/  \/   |______|_____/|_|  |_|\____/ \____/|_|\_\
+"""
+
+def supports_color():
+    if not hasattr(sys.stdout, 'isatty'):
+        return False
+    if not sys.stdout.isatty():
+        return False
+    return True
+
+USE_COLOR = supports_color()
+
+if USE_COLOR:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+else:
+    RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = BOLD = DIM = RESET = ''
+
+def print_banner():
+    if USE_COLOR:
+        print(f"{CYAN}{BANNER}{RESET}")
+    else:
+        print(BANNER)
+
+def print_help():
+    print_banner()
+    print("  COMMANDS:")
+    print()
+    if USE_COLOR:
+        print(f"  {GREEN}scan{RESET}       <file>          Analyze file metadata")
+        print(f"  {GREEN}trace{RESET}      <file>          Extract GPS & EXIF data")
+        print(f"  {GREEN}url{RESET}        <url>           Analyze URL/image")
+        print(f"  {GREEN}strings{RESET}    <file>          Extract embedded strings")
+        print(f"  {GREEN}hash{RESET}       <file>          Generate file hashes")
+        print(f"  {GREEN}dir{RESET}        <directory>     Scan entire directory")
+        print(f"  {GREEN}gps{RESET}        <file>          Extract GPS coordinates")
+        print(f"  {GREEN}geolocate{RESET}  <file/url>      Multi-method location finder")
+        print(f"  {GREEN}guide{RESET}                    Show geolocation techniques")
+    else:
+        print("  scan       <file>          Analyze file metadata")
+        print("  trace      <file>          Extract GPS & EXIF data")
+        print("  url        <url>           Analyze URL/image")
+        print("  strings    <file>          Extract embedded strings")
+        print("  hash       <file>          Generate file hashes")
+        print("  dir        <directory>     Scan entire directory")
+        print("  gps        <file>          Extract GPS coordinates")
+        print("  geolocate  <file/url>      Multi-method location finder")
+        print("  guide                     Show geolocation techniques")
+    print()
+    print("  OPTIONS:")
+    print()
+    if USE_COLOR:
+        print(f"  {YELLOW}--help{RESET}      Show this help")
+        print(f"  {YELLOW}--version{RESET}   Show version")
+        print(f"  {YELLOW}--json{RESET}      Output as JSON")
+        print(f"  {YELLOW}--output{RESET}    Save to file")
+    else:
+        print("  --help      Show this help")
+        print("  --version   Show version")
+        print("  --json      Output as JSON")
+        print("  --output    Save to file")
+    print()
+    print("  EXAMPLES:")
+    print()
+    if USE_COLOR:
+        print(f"  {DIM}owlshook scan photo.jpg{RESET}")
+        print(f"  {DIM}owlshook trace evidence.png{RESET}")
+        print(f"  {DIM}owlshook url 'https://instagram.com/p/ABC123/'{RESET}")
+        print(f"  {DIM}owlshook dir /forensics/case001/{RESET}")
+        print(f"  {DIM}owlshook gps photo.jpg --json{RESET}")
+    else:
+        print("  owlshook scan photo.jpg")
+        print("  owlshook trace evidence.png")
+        print("  owlshook url 'https://instagram.com/p/ABC123/'")
+        print("  owlshook dir /forensics/case001/")
+        print("  owlshook gps photo.jpg --json")
+    print()
+    print("  SUPPORTED PLATFORMS:")
+    print()
+    if USE_COLOR:
+        print(f"  {CYAN}Instagram{RESET}  {CYAN}Facebook{RESET}  {CYAN}Twitter/X{RESET}  {CYAN}Reddit{RESET}")
+        print(f"  {CYAN}Imgur{RESET}  {CYAN}YouTube{RESET}  {CYAN}LinkedIn{RESET}  {CYAN}TikTok{RESET}")
+        print(f"  {CYAN}Google Drive{RESET}  {CYAN}Google Photos{RESET}  {CYAN}Wikimedia{RESET}")
+        print(f"  {CYAN}Dropbox{RESET}  {CYAN}OneDrive{RESET}  {CYAN}Flickr{RESET}  {CYAN}Pinterest{RESET}")
+    else:
+        print("  Instagram  Facebook  Twitter/X  Reddit")
+        print("  Imgur  YouTube  LinkedIn  TikTok")
+        print("  Google Drive  Google Photos  Wikimedia")
+        print("  Dropbox  OneDrive  Flickr  Pinterest")
+    print()
+    if USE_COLOR:
+        print(f"{DIM}  Social media strips GPS - original photos retain metadata{RESET}")
+    else:
+        print("  Social media strips GPS - original photos retain metadata")
+    print()
+
+def print_version():
+    print_banner()
+    if USE_COLOR:
+        print(f"  {GREEN}OwlsHook v2.0{RESET}")
+        print(f"  {DIM}Forensic & OSINT Toolkit{RESET}")
+    else:
+        print("  OwlsHook v2.0")
+        print("  Forensic & OSINT Toolkit")
+    print()
+
+def run_tool(script, args):
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), script)
+    if not os.path.exists(script_path):
+        if USE_COLOR:
+            print(f"{RED}[!] Tool not found: {script}{RESET}")
+        else:
+            print(f"[!] Tool not found: {script}")
+        sys.exit(1)
+    cmd = [sys.executable, script_path] + args
+    subprocess.run(cmd)
+
+def main():
+    if len(sys.argv) < 2:
+        print_banner()
+        if USE_COLOR:
+            print(f"  {YELLOW}No command specified. Use --help for usage.{RESET}")
+        else:
+            print("  No command specified. Use --help for usage.")
+        print()
+        sys.exit(1)
+
+    cmd = sys.argv[1].lower()
+    args = sys.argv[2:]
+
+    if cmd in ('--help', '-h', 'help'):
+        print_help()
+    elif cmd in ('--version', '-v', 'version'):
+        print_version()
+    elif cmd == 'scan':
+        run_tool('file_inspector.py', args)
+    elif cmd == 'trace':
+        run_tool('tracer.py', args)
+    elif cmd == 'url':
+        run_tool('url_inspector.py', args)
+    elif cmd == 'strings':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook strings <file>{RESET}")
+            else:
+                print("[!] Usage: owlshook strings <file>")
+            sys.exit(1)
+        run_tool('file_inspector.py', args)
+    elif cmd == 'hash':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook hash <file>{RESET}")
+            else:
+                print("[!] Usage: owlshook hash <file>")
+            sys.exit(1)
+        run_tool('tracer.py', args)
+    elif cmd == 'dir':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook dir <directory>{RESET}")
+            else:
+                print("[!] Usage: owlshook dir <directory>")
+            sys.exit(1)
+        run_tool('tracer.py', args)
+    elif cmd == 'gps':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook gps <file>{RESET}")
+            else:
+                print("[!] Usage: owlshook gps <file>")
+            sys.exit(1)
+        run_tool('tracer.py', args)
+    elif cmd == 'geolocate':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook geolocate <image_or_url>{RESET}")
+            else:
+                print("[!] Usage: owlshook geolocate <image_or_url>")
+            sys.exit(1)
+        run_tool('geolocate.py', args)
+    elif cmd == 'guide':
+        run_tool('geolocation_guide.py', args)
+    else:
+        if os.path.exists(cmd):
+            run_tool('tracer.py', [cmd] + args)
+        else:
+            if USE_COLOR:
+                print(f"{RED}[!] Unknown command: {cmd}{RESET}")
+                print(f"  {YELLOW}Use 'owlshook --help' for usage{RESET}")
+            else:
+                print(f"[!] Unknown command: {cmd}")
+                print("  Use 'owlshook --help' for usage")
+            sys.exit(1)
+
+if __name__ == '__main__':
+    main()
