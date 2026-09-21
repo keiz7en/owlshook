@@ -54,6 +54,8 @@ def print_help():
         print(f"  {GREEN}dir{RESET}        <directory>     Scan entire directory")
         print(f"  {GREEN}gps{RESET}        <file>          Extract GPS coordinates")
         print(f"  {GREEN}geolocate{RESET}  <file/url>      Multi-method location finder")
+        print(f"  {GREEN}osint{RESET}      <file>          Full forensic metadata analysis")
+        print(f"  {GREEN}forensic{RESET}   <file>          Advanced forensic analysis")
         print(f"  {GREEN}guide{RESET}                    Show geolocation techniques")
     else:
         print("  scan       <file>          Analyze file metadata")
@@ -64,6 +66,8 @@ def print_help():
         print("  dir        <directory>     Scan entire directory")
         print("  gps        <file>          Extract GPS coordinates")
         print("  geolocate  <file/url>      Multi-method location finder")
+        print("  osint      <file>          Full forensic metadata analysis")
+        print("  forensic   <file>          Advanced forensic analysis")
         print("  guide                     Show geolocation techniques")
     print()
     print("  OPTIONS:")
@@ -197,6 +201,22 @@ def main():
                 print("[!] Usage: owlshook geolocate <image_or_url>")
             sys.exit(1)
         run_tool('geolocate.py', args)
+    elif cmd == 'osint':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook osint <file>{RESET}")
+            else:
+                print("[!] Usage: owlshook osint <file>")
+            sys.exit(1)
+        run_tool('osint_metadata.py', args)
+    elif cmd == 'forensic':
+        if not args:
+            if USE_COLOR:
+                print(f"{RED}[!] Usage: owlshook forensic <file>{RESET}")
+            else:
+                print("[!] Usage: owlshook forensic <file>")
+            sys.exit(1)
+        run_tool('osint_metadata.py', args)
     elif cmd == 'guide':
         run_tool('geolocation_guide.py', args)
     else:
